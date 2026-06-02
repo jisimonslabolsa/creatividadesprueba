@@ -14,27 +14,25 @@
             {% if wide %}
             /* Ancho: panel sólido de marca + imagen a la derecha (logo/texto legibles
                con cualquier color de marca, sin velos). */
-            flex-direction: row; gap: 8px; padding: 0 7px;
-            background: #0c0c0e; color: #fff;
+            flex-direction: row; gap: 14px; padding: 0 16px;
+            background: var(--brand); color: var(--ink);
             {% else %}
             /* Caja: imagen a sangre + oscurecido neutro abajo, texto sobre la imagen. */
             flex-direction: column; justify-content: flex-end;
             padding: 14px; text-align: center; color: #fff; background: #0c0c0e;
             {% endif %} }
 
-  {% if not wide %}
-  .bg { position: absolute; inset: 0;
+  .bg { position: absolute;
+        {% if wide %}
+        top: 0; right: 0; width: 34%; height: 100%;
+        {% else %}
+        inset: 0;
+        {% endif %}
         {% if background %}
         background: url('{{ background }}') center / cover no-repeat;
         {% else %}
         background: linear-gradient(135deg, var(--brand), #000);
         {% endif %} }
-  {% endif %}
-
-   {% if wide %}
-  .prod { flex: none; height: 100%; display: flex; align-items: center; }
-  .prod img { height: 88%; width: auto; object-fit: contain; }
-  {% endif %}
 
   {% if not wide %}
   .scrim { position: absolute; inset: 0;
@@ -45,15 +43,13 @@
           {% if wide %}
           position: relative; height: 56%; max-width: 110px;
           {% else %}
-          position: absolute; top: 12px; left: 12px; height: 40px; max-width: 46%;
-          {% endif %}
-          filter: drop-shadow(0 2px 6px rgba(0,0,0,.5));
-  }
+          position: absolute; top: 12px; left: 12px; height: 20px; max-width: 46%;
+          {% endif %} }
 
   .txt { position: relative; display: flex; flex-direction: column;
          justify-content: center; gap: 4px;
-         {% if wide %}flex: 1; padding: 0 8px;{% else %}flex: none;{% endif %} }
-		 
+         {% if wide %}flex: 1; padding-right: 30%;{% else %}flex: none;{% endif %} }
+
   .headline { font-family: {{ display_font }}; font-weight: 800; line-height: 1.06;
               letter-spacing: -0.01em;
               {% if not wide %}text-shadow: 0 1px 10px rgba(0,0,0,.5);{% endif %}
@@ -67,9 +63,9 @@
 </head>
 <body>
   <div class="banner">
-    {% if not wide %}<div class="bg"></div><div class="scrim"></div>{% endif %}
+    <div class="bg"></div>
+    {% if not wide %}<div class="scrim"></div>{% endif %}
     {% if logo %}<img class="logo" src="{{ logo }}" alt="">{% endif %}
-    {% if wide and product %}<div class="prod"><img src="{{ product }}" alt=""></div>{% endif %}
     <div class="txt">{% if headline %}<div class="headline">{{ headline }}</div>{% endif %}</div>
     {% if cta %}<div class="cta">{{ cta }}</div>{% endif %}
   </div>

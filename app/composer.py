@@ -82,8 +82,6 @@ async def compose(
         font_url=settings.default_font_url,
         display_font=settings.default_display_font,
         body_font=settings.default_body_font,
-        narrow=(spec.width / spec.height) < 0.6,
-        contain=(spec.width / spec.height) < 0.6,
     )
 
     page = await browser.new_page(
