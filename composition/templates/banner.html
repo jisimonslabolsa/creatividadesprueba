@@ -4,47 +4,67 @@
 <meta charset="utf-8">
 {% if font_url %}<link rel="stylesheet" href="{{ font_url }}">{% endif %}
 <style>
-  :root { --accent: {{ accent_color }}; --brand: {{ brand_color }}; }
+  :root { --accent: {{ accent_color }}; --brand: {{ brand_color }}; --ink: {{ panel_text }}; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: {{ width }}px; height: {{ height }}px; overflow: hidden; }
 
   .banner { position: relative; width: 100%; height: 100%;
-            font-family: {{ body_font }}; color: #fff; background: var(--brand);
+            font-family: {{ body_font }};
             display: flex; align-items: center;
             {% if wide %}
-            flex-direction: row; gap: 14px; padding: 0 18px;
+            /* Ancho: panel sólido de marca + imagen a la derecha (logo/texto legibles
+               con cualquier color de marca, sin velos). */
+            flex-direction: row; gap: 14px; padding: 0 16px;
+            background: var(--brand); color: var(--ink);
             {% else %}
-            flex-direction: column; justify-content: space-between;
-            padding: 16px; text-align: center;
+            /* Caja: imagen a sangre + oscurecido neutro abajo, texto sobre la imagen. */
+            flex-direction: column; justify-content: flex-end;
+            padding: 14px; text-align: center; color: #fff; background: #0c0c0e;
             {% endif %} }
 
-  .bg { position: absolute; inset: 0;
-        {% if background %}background: url('{{ background }}') center / cover; opacity: .55;{% endif %} }
-  .tint { position: absolute; inset: 0;
-          {% if background %}
-          background: linear-gradient(90deg, var(--brand) 0%, rgba(0,0,0,.05) 100%);
-          {% else %}display: none;{% endif %} }
+  .bg { position: absolute;
+        {% if wide %}
+        top: 0; right: 0; width: 34%; height: 100%;
+        {% else %}
+        inset: 0;
+        {% endif %}
+        {% if background %}
+        background: url('{{ background }}') center / cover no-repeat;
+        {% else %}
+        background: linear-gradient(135deg, var(--brand), #000);
+        {% endif %} }
 
-  .logo { position: relative; flex: none; object-fit: contain;
-          height: {% if wide %}58%{% else %}22px{% endif %}; max-width: 120px; }
+  {% if not wide %}
+  .scrim { position: absolute; inset: 0;
+           background: linear-gradient(180deg, rgba(0,0,0,.14) 0%, rgba(0,0,0,0) 32%, rgba(0,0,0,.8) 100%); }
+  {% endif %}
 
-  .txt { position: relative; flex: 1; display: flex; flex-direction: column;
-         justify-content: center; }
+  .logo { flex: none; object-fit: contain;
+          {% if wide %}
+          position: relative; height: 56%; max-width: 110px;
+          {% else %}
+          position: absolute; top: 12px; left: 12px; height: 20px; max-width: 46%;
+          {% endif %} }
 
-  .headline { font-family: {{ display_font }}; font-weight: 800; line-height: 1.05;
+  .txt { position: relative; display: flex; flex-direction: column;
+         justify-content: center; gap: 4px;
+         {% if wide %}flex: 1; padding-right: 30%;{% else %}flex: none;{% endif %} }
+
+  .headline { font-family: {{ display_font }}; font-weight: 800; line-height: 1.06;
               letter-spacing: -0.01em;
-              font-size: {% if wide %}clamp(14px, 3.2vw, 22px){% else %}clamp(15px, 7vw, 26px){% endif %}; }
+              {% if not wide %}text-shadow: 0 1px 10px rgba(0,0,0,.5);{% endif %}
+              font-size: {% if wide %}clamp(13px, 3vw, 22px){% else %}clamp(15px, 7vw, 26px){% endif %}; }
 
   .cta { position: relative; flex: none; background: var(--accent); color: #fff;
          font-family: {{ display_font }}; font-weight: 700; white-space: nowrap;
          border-radius: 6px; padding: 8px 16px; font-size: 13px;
-         {% if not wide %}align-self: center;{% endif %} }
+         {% if not wide %}margin-top: 8px;{% endif %} }
 </style>
 </head>
 <body>
   <div class="banner">
     <div class="bg"></div>
-    <div class="tint"></div>
+    {% if not wide %}<div class="scrim"></div>{% endif %}
     {% if logo %}<img class="logo" src="{{ logo }}" alt="">{% endif %}
     <div class="txt">{% if headline %}<div class="headline">{{ headline }}</div>{% endif %}</div>
     {% if cta %}<div class="cta">{{ cta }}</div>{% endif %}

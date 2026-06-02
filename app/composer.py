@@ -41,9 +41,7 @@ def _pick_template(spec, requested, has_product, image_is_product) -> str:
         return "banner.html"
     if has_product:
         return "product.html"        # producto recortado en primer plano
-    if image_is_product:
-        return "split.html"          # foto de producto: imagen + panel de texto
-    return "spotlight.html"          # fondo abstracto: texto sobre el fondo
+    return "spotlight.html"          # texto sobre la imagen (sin bandas)
 
 
 async def compose(
