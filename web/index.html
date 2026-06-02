@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AdGen — generador de creatividades</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Hanken+Grotesk:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#0e0f12; --panel:#16181d; --panel2:#1d2026; --line:#2a2e37;
+    --text:#eef0f4; --muted:#9aa1ad; --accent:#ff5a36; --accent2:#ffb020;
+    --radius:14px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:'Hanken Grotesk',sans-serif;
+       line-height:1.5;-webkit-font-smoothing:antialiased}
+  h1,h2,h3,label.section{font-family:'Bricolage Grotesque',sans-serif;letter-spacing:-.02em}
+  a{color:var(--accent)}
+
+  header{padding:22px 28px;border-bottom:1px solid var(--line);
+         display:flex;align-items:baseline;gap:14px}
+  header h1{font-size:24px;font-weight:700}
+  header .tag{color:var(--muted);font-size:14px}
+  header .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);
+              display:inline-block;margin-right:6px;transform:translateY(-2px)}
+
+  .wrap{display:grid;grid-template-columns:minmax(360px,420px) 1fr;gap:0;align-items:start}
+  @media(max-width:880px){.wrap{grid-template-columns:1fr}}
+
+  .form{padding:26px 28px;border-right:1px solid var(--line);position:sticky;top:0}
+  @media(max-width:880px){.form{position:static;border-right:0;border-bottom:1px solid var(--line)}}
+
+  .field{margin-bottom:20px}
+  .field > label.section{display:block;font-size:13px;text-transform:uppercase;
+        letter-spacing:.06em;color:var(--muted);margin-bottom:8px}
+  .hint{color:var(--muted);font-size:12.5px;margin-top:5px}
+
+  input[type=text],input[type=url],textarea{
+    width:100%;background:var(--panel);border:1px solid var(--line);color:var(--text);
+    border-radius:10px;padding:11px 13px;font:inherit;font-size:15px}
+  textarea{resize:vertical;min-height:78px}
+  input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+
+  .row{display:flex;gap:14px;flex-wrap:wrap}
+  .row .field{flex:1;min-width:120px;margin-bottom:0}
+
+  .colorpick{display:flex;align-items:center;gap:9px;background:var(--panel);
+    border:1px solid var(--line);border-radius:10px;padding:7px 11px}
+  .colorpick input[type=color]{width:30px;height:30px;border:0;background:none;
+    padding:0;border-radius:6px;cursor:pointer}
+  .colorpick span{font-size:13px;color:var(--muted)}
+
+  /* tamaños */
+  .group{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
+  .group-head{display:flex;align-items:center;justify-content:space-between;
+    padding:10px 13px;background:var(--panel2);cursor:pointer}
+  .group-head h3{font-size:15px;font-weight:700}
+  .group-head .count{font-size:12px;color:var(--muted)}
+  .group-body{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 13px}
+  .sz{display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;
+    padding:4px 5px;border-radius:7px}
+  .sz:hover{background:var(--panel)}
+  .sz input{accent-color:var(--accent);width:15px;height:15px}
+  .sz .dim{color:var(--muted);font-size:11.5px}
+  .selall{font-size:12px;color:var(--accent);cursor:pointer;user-select:none;
+    background:none;border:0;font-family:inherit}
+
+  .filedrop{border:1px dashed var(--line);border-radius:10px;padding:13px;
+    text-align:center;color:var(--muted);font-size:14px;cursor:pointer;background:var(--panel)}
+  .filedrop.has{color:var(--text);border-color:var(--accent)}
+  .filedrop input{display:none}
+
+  button.go{width:100%;margin-top:6px;background:var(--accent);color:#fff;border:0;
+    font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:16px;
+    padding:14px;border-radius:12px;cursor:pointer;letter-spacing:.01em}
+  button.go:disabled{opacity:.5;cursor:not-allowed}
+
+  /* resultados */
+  .results{padding:26px 28px}
+  .status{display:flex;align-items:center;gap:12px;margin-bottom:18px;
+    font-size:15px;color:var(--muted)}
+  .spinner{width:16px;height:16px;border:2px solid var(--line);
+    border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .bar{height:6px;background:var(--panel2);border-radius:6px;overflow:hidden;flex:1;max-width:240px}
+  .bar > i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+
+  .dlbar{display:flex;align-items:center;justify-content:space-between;gap:14px;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:14px 18px;margin-bottom:18px}
+  .dlbar .info{display:flex;align-items:center;gap:10px}
+  .dlbar strong{font-family:'Bricolage Grotesque',sans-serif;font-size:20px}
+  .dlbar .sub{color:var(--muted);font-size:13px}
+  .dlall{background:var(--accent);color:#fff;text-decoration:none;
+    font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:14px;
+    padding:11px 20px;border-radius:10px;white-space:nowrap;display:inline-flex;
+    align-items:center;gap:8px}
+  .dlall:hover{filter:brightness(1.08)}
+  .dlall[aria-disabled=true]{opacity:.45;pointer-events:none}
+  .catsec{margin-bottom:26px}
+  .cathead{display:flex;align-items:center;gap:12px;margin-bottom:12px;
+    padding-bottom:8px;border-bottom:1px solid var(--line)}
+  .cathead h2{font-size:18px;font-weight:700}
+  .cathead .sub{color:var(--muted);font-size:13px}
+  .cathead .dlgrp{margin-left:auto;background:var(--panel2);color:var(--text);
+    text-decoration:none;font-size:12.5px;padding:6px 13px;border-radius:8px;
+    border:1px solid var(--line);white-space:nowrap}
+  .cathead .dlgrp:hover{border-color:var(--accent);color:var(--accent)}
+  .histwrap{margin-bottom:22px}
+  .histwrap .h{font-family:'Bricolage Grotesque',sans-serif;font-size:13px;
+    text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:9px}
+  .histbar{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+  .histchip{flex:none;width:128px;background:var(--panel);border:1px solid var(--line);
+    border-radius:10px;overflow:hidden;cursor:pointer;text-align:left}
+  .histchip:hover{border-color:var(--accent)}
+  .histchip .th{width:100%;height:72px;object-fit:cover;display:block;background:#000}
+  .histchip .hb{padding:7px 9px}
+  .histchip .d{font-size:12px;color:var(--text)}
+  .histchip .c{font-size:11.5px;color:var(--muted)}
+  .empty{color:var(--muted);font-size:15px;padding:40px 0;text-align:center}
+  .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    overflow:hidden;display:flex;flex-direction:column}
+  .card .imgwrap{background:#000;display:flex;align-items:center;justify-content:center;
+    min-height:120px}
+  .card img{max-width:100%;max-height:300px;display:block}
+  .card .meta{padding:11px 13px;font-size:13px}
+  .card .meta .top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:5px}
+  .card .badge{background:var(--panel2);color:var(--accent2);font-size:11px;
+    padding:2px 8px;border-radius:20px;white-space:nowrap}
+  .card .lbl{color:var(--muted);font-size:11.5px}
+  .card .hl{font-weight:600;margin:4px 0}
+  .card a.dl{display:block;text-align:center;border-top:1px solid var(--line);
+    padding:9px;font-size:13px;color:var(--text);text-decoration:none}
+  .card a.dl:hover{color:var(--accent)}
+  .err{background:#3a1714;border:1px solid #5a241d;color:#ffb4a6;
+    padding:14px;border-radius:10px;font-size:14px}
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="dot"></span>AdGen</h1>
+  <span class="tag">generador de creatividades</span>
+</header>
+
+<div class="wrap">
+  <!-- ---------------- FORMULARIO ---------------- -->
+  <form class="form" id="form">
+    <div class="field">
+      <label class="section">URL de la página</label>
+      <input type="url" id="url" placeholder="https://tu-producto.com">
+      <div class="hint">La IA analizará esta página para inspirar copy e imágenes.</div>
+    </div>
+
+    <div class="field">
+      <label class="section">Briefing (opcional)</label>
+      <textarea id="brief" placeholder="Tono, ofertas, público, ideas de imagen… Si lo dejas vacío, la IA se basa solo en la web."></textarea>
+    </div>
+
+    <div class="field">
+      <label class="section">Logotipo (opcional)</label>
+      <label class="filedrop" id="filedrop">
+        <span id="fileLabel">Subir logo · si no, se intenta tomar de la web</span>
+        <input type="file" id="logo" accept="image/*">
+      </label>
+    </div>
+
+    <div class="field">
+      <label class="section">Tamaños a generar</label>
+      <div id="groups"></div>
+    </div>
+
+    <div class="row" style="margin-bottom:20px">
+      <div class="field">
+        <label class="section">Variantes</label>
+        <input type="text" id="nvar" value="3" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label class="section">Color marca</label>
+        <div class="colorpick"><input type="color" id="brand" value="#111114"><span id="brandHex">#111114</span></div>
+      </div>
+      <div class="field">
+        <label class="section">Color acento</label>
+        <div class="colorpick"><input type="color" id="accent" value="#ff5a36"><span id="accentHex">#ff5a36</span></div>
+      </div>
+    </div>
+
+    <button type="submit" class="go" id="go">Generar creatividades</button>
+  </form>
+
+  <!-- ---------------- RESULTADOS ---------------- -->
+  <section class="results">
+    <div class="histwrap" id="history" style="display:none">
+      <div class="h">Historial reciente</div>
+      <div class="histbar" id="histbar"></div>
+    </div>
+    <div class="status" id="status" style="display:none">
+      <div class="spinner" id="spin"></div>
+      <span id="statusText">En cola…</span>
+      <div class="bar"><i id="barFill"></i></div>
+    </div>
+    <div id="output"><div class="empty">Aún no hay creatividades. Rellena el formulario y pulsa generar.</div></div>
+  </section>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+let SIZES = {};   // key -> {label,width,height}
+let JOBID = null; // job activo, para la descarga ZIP
+
+// ---- cargar catálogo de tamaños ----
+async function loadPlatforms(){
+  const groups = await (await fetch('/platforms')).json();
+  const cont = $('#groups');
+  cont.innerHTML = '';
+  for(const g of groups){
+    const ids = g.sizes.map(s => s.key);
+    g.sizes.forEach(s => SIZES[s.key] = Object.assign({category: g.category}, s));
+    const el = document.createElement('div');
+    el.className = 'group';
+    el.innerHTML = `
+      <div class="group-head">
+        <h3>${g.category}</h3>
+        <button type="button" class="selall" data-ids='${JSON.stringify(ids)}'>Todos</button>
+      </div>
+      <div class="group-body">
+        ${g.sizes.map(s => `
+          <label class="sz">
+            <input type="checkbox" name="platforms" value="${s.key}">
+            <span>${s.label} <span class="dim">${s.width}×${s.height}</span></span>
+          </label>`).join('')}
+      </div>`;
+    cont.appendChild(el);
+  }
+  cont.querySelectorAll('.selall').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ids = JSON.parse(btn.dataset.ids);
+      const boxes = ids.map(id => cont.querySelector(`input[value="${id}"]`));
+      const allOn = boxes.every(b => b.checked);
+      boxes.forEach(b => b.checked = !allOn);
+    });
+  });
+}
+
+// ---- color hex labels ----
+$('#brand').addEventListener('input', e => $('#brandHex').textContent = e.target.value);
+$('#accent').addEventListener('input', e => $('#accentHex').textContent = e.target.value);
+
+// ---- logo file label ----
+$('#logo').addEventListener('change', e => {
+  const f = e.target.files[0];
+  $('#fileLabel').textContent = f ? f.name : 'Subir logo · si no, se intenta tomar de la web';
+  $('#filedrop').classList.toggle('has', !!f);
+});
+
+// ---- submit ----
+$('#form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const platforms = [...document.querySelectorAll('input[name=platforms]:checked')].map(c => c.value);
+  const url = $('#url').value.trim();
+  const brief = $('#brief').value.trim();
+  if(!platforms.length){ alert('Selecciona al menos un tamaño.'); return; }
+  if(!url && !brief){ alert('Introduce una URL o un briefing.'); return; }
+
+  const fd = new FormData();
+  platforms.forEach(p => fd.append('platforms', p));
+  if(url) fd.append('url', url);
+  if(brief) fd.append('brief', brief);
+  fd.append('n_variants', $('#nvar').value || '3');
+  fd.append('brand_color', $('#brand').value);
+  fd.append('accent_color', $('#accent').value);
+  const logoFile = $('#logo').files[0];
+  if(logoFile) fd.append('logo', logoFile);
+
+  $('#go').disabled = true;
+  $('#output').innerHTML = '';
+  showStatus('En cola…', 0, 1);
+
+  try{
+    const res = await fetch('/ads/generate', {method:'POST', body:fd});
+    if(!res.ok){ throw new Error((await res.json()).detail || res.statusText); }
+    const {job_id, expected} = await res.json();
+    JOBID = job_id;
+    poll(job_id, expected);
+  }catch(err){
+    showError(err.message); $('#go').disabled = false;
+  }
+});
+
+function showStatus(text, done, total){
+  $('#status').style.display = 'flex';
+  $('#spin').style.display = 'block';
+  $('#statusText').textContent = text;
+  $('#barFill').style.width = total ? (100*done/total)+'%' : '0%';
+}
+function hideSpinner(){ $('#spin').style.display = 'none'; }
+function showError(msg){
+  $('#status').style.display='none';
+  $('#output').innerHTML = `<div class="err">Error: ${msg}</div>`;
+}
+
+// ---- polling ----
+async function poll(jobId, expected){
+  if(jobId !== JOBID){ return; }   // el usuario abrió otra tanda: detener
+  try{
+    const job = await (await fetch('/jobs/'+jobId)).json();
+    if(jobId !== JOBID){ return; }
+    const finished = job.status === 'done';
+    render(job.creatives, finished);
+    const done = job.creatives.length;
+    if(job.status === 'done'){
+      showStatus(`Listo · ${done} creatividades`, done, expected);
+      hideSpinner(); $('#go').disabled = false; loadHistory(); return;
+    }
+    if(job.status === 'error'){ showError(job.error || 'fallo en la generación'); $('#go').disabled = false; loadHistory(); return; }
+    showStatus(`Generando… ${done}/${expected}`, done, expected);
+    setTimeout(() => poll(jobId, expected), 2000);
+  }catch(err){
+    showError(err.message); $('#go').disabled = false;
+  }
+}
+
+const CAT_ORDER = ['IAB','Facebook','Instagram','TikTok'];
+
+function cardHtml(c){
+  return `
+    <div class="card">
+      <div class="imgwrap"><img src="${c.image_path}" alt="${c.label}"></div>
+      <div class="meta">
+        <div class="top"><span class="lbl">${c.label} · ${c.width}×${c.height}</span>
+          <span class="badge">${c.angle || '—'}</span></div>
+        <div class="hl">${c.headline || ''}</div>
+        <div class="lbl">${c.cta || ''}</div>
+      </div>
+      <a class="dl" href="${c.image_path}" download>Descargar PNG</a>
+    </div>`;
+}
+
+function render(creatives, done){
+  if(!creatives.length){ return; }
+
+  const subtitle = done ? 'listas para descargar' : 'generándose…';
+  const bar = `
+    <div class="dlbar">
+      <div class="info">
+        <strong>${creatives.length}</strong>
+        <span class="sub">creatividades ${subtitle}</span>
+      </div>
+      <a class="dlall" href="/jobs/${JOBID}/download" download>⬇ Descargar todo (ZIP)</a>
+    </div>`;
+
+  // agrupar por categoría
+  const byCat = {};
+  creatives.forEach(c => {
+    const cat = (SIZES[c.platform] || {}).category || 'Otros';
+    (byCat[cat] = byCat[cat] || []).push(c);
+  });
+  const cats = CAT_ORDER.filter(c => byCat[c]).concat(
+    Object.keys(byCat).filter(c => !CAT_ORDER.includes(c))
+  );
+
+  const sections = cats.map(cat => {
+    const cards = byCat[cat].map(cardHtml).join('');
+    const zip = `<a class="dlgrp" href="/jobs/${JOBID}/download?category=${encodeURIComponent(cat)}" download>⬇ ZIP ${cat}</a>`;
+    return `
+      <div class="catsec">
+        <div class="cathead">
+          <h2>${cat}</h2><span class="sub">${byCat[cat].length}</span>${zip}
+        </div>
+        <div class="gallery">${cards}</div>
+      </div>`;
+  }).join('');
+
+  $('#output').innerHTML = bar + sections;
+}
+
+// ---------------- historial ----------------
+async function loadHistory(){
+  try{
+    const jobs = await (await fetch('/jobs')).json();
+    const recent = jobs.filter(j => j.count > 0);
+    if(!recent.length){ $('#history').style.display = 'none'; return; }
+    $('#history').style.display = 'block';
+    $('#histbar').innerHTML = recent.map(j => {
+      const d = new Date(j.created * 1000).toLocaleString('es-ES',
+        {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
+      return `
+        <div class="histchip" data-id="${j.id}">
+          ${j.thumb ? `<img class="th" src="${j.thumb}" alt="">` : ''}
+          <div class="hb"><div class="d">${d}</div>
+            <div class="c">${j.count} creatividades</div></div>
+        </div>`;
+    }).join('');
+    $('#histbar').querySelectorAll('.histchip').forEach(el =>
+      el.addEventListener('click', () => openJob(el.dataset.id)));
+  }catch(_){ /* silencioso */ }
+}
+
+async function openJob(id){
+  try{
+    const job = await (await fetch('/jobs/'+id)).json();
+    JOBID = id;
+    $('#status').style.display = 'flex';
+    $('#spin').style.display = 'none';
+    $('#statusText').textContent = `Tanda anterior · ${job.creatives.length} creatividades`;
+    $('#barFill').style.width = '100%';
+    render(job.creatives, job.status === 'done');
+  }catch(err){ showError(err.message); }
+}
+
+loadPlatforms();
+loadHistory();
+</script>
+</body>
+</html>

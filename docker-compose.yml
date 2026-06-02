@@ -1,0 +1,26 @@
+# Stack para Portainer. Ver README ("Despliegue en Portainer") para los dos
+# métodos: build desde repositorio, o imagen prebuilt.
+services:
+  adgen:
+    build: .
+    # image: adgen:latest        # alternativa si construyes la imagen aparte
+    container_name: adgen
+    ports:
+      - "8000:8000"
+    environment:
+      # Imprescindible:
+      ADGEN_MISTRAL_API_KEY: ${ADGEN_MISTRAL_API_KEY}
+      # Opcionales (con valores por defecto):
+      ADGEN_MISTRAL_MODEL: ${ADGEN_MISTRAL_MODEL:-mistral-large-latest}
+      ADGEN_IMAGE_PROVIDER: ${ADGEN_IMAGE_PROVIDER:-placeholder}
+      ADGEN_COMFYUI_URL: ${ADGEN_COMFYUI_URL:-http://host.docker.internal:8188}
+    volumes:
+      - adgen_data:/data
+    # Chromium necesita memoria compartida amplia para no fallar
+    shm_size: "1gb"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  adgen_data:
