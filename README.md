@@ -104,6 +104,13 @@ En `http://localhost:8000`:
   imágenes detectadas en la página. Selecciona hasta tantas como variantes vayas
   a crear y se usará una distinta en cada variante (si eliges menos, se reutilizan
   en orden; si no eliges ninguna, se toman automáticamente).
+
+Cuando la imagen principal es una foto de producto (sin recorte de fondo), la
+creatividad usa un **layout en bandas**: la foto ocupa una zona y el texto va en
+un panel sólido del color de marca en la zona libre, sin superposiciones ni
+transparencias sobre la imagen. El logo se coloca en ese panel, por lo que
+siempre queda visible. El reparto es lateral en formatos horizontales y
+superior/inferior en verticales y cuadrados.
 - **Tamaños**: catálogo completo IAB + Facebook + Instagram + TikTok, con botón
   "Todos" por categoría.
 

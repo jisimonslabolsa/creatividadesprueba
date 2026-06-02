@@ -18,20 +18,32 @@ def _data_uri(image_bytes: bytes, mime: str = "image/png") -> str:
     return f"data:{mime};base64,{base64.b64encode(image_bytes).decode()}"
 
 
+def _text_on(hex_color: str) -> str:
+    """Negro o blanco según el brillo del color de marca (para el panel)."""
+    h = hex_color.lstrip("#")
+    if len(h) != 6:
+        return "#ffffff"
+    r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+    lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    return "#0c0c0e" if lum > 140 else "#ffffff"
+
+
 def _is_banner(spec: PlatformSpec) -> bool:
     area = spec.width * spec.height
     ratio = spec.width / spec.height
     return area <= 336 * 280 or ratio >= 3 or spec.height <= 120
 
 
-def _pick_template(spec, requested, has_product) -> str:
+def _pick_template(spec, requested, has_product, image_is_product) -> str:
     if requested:
         return requested
     if _is_banner(spec):
         return "banner.html"
     if has_product:
-        return "product.html"   # producto recortado en primer plano
-    return "spotlight.html"
+        return "product.html"        # producto recortado en primer plano
+    if image_is_product:
+        return "split.html"          # foto de producto: imagen + panel de texto
+    return "spotlight.html"          # fondo abstracto: texto sobre el fondo
 
 
 async def compose(
@@ -45,10 +57,13 @@ async def compose(
     brand_color: str = "#111114",
     accent_color: str = "#ff4d2e",
     logo: bytes | None = None,
-    product: bytes | None = None,   # recorte del producto (RGBA) en primer plano
+    product: bytes | None = None,        # recorte del producto (primer plano)
+    image_is_product: bool = False,      # el fondo es una foto de producto
     template: str | None = None,
 ) -> bytes:
-    template_name = _pick_template(spec, template, product is not None)
+    template_name = _pick_template(
+        spec, template, product is not None, image_is_product
+    )
     tmpl = _env.get_template(template_name)
 
     html = tmpl.render(
@@ -56,6 +71,7 @@ async def compose(
         height=spec.height,
         wide=(spec.width / spec.height) > 2.5,
         layout="side" if (spec.width / spec.height) > 1.3 else "stack",
+        orient="v" if (spec.width / spec.height) >= 1.2 else "h",
         background=_data_uri(background) if background else None,
         logo=_data_uri(logo) if logo else None,
         product=_data_uri(product) if product else None,
@@ -64,6 +80,7 @@ async def compose(
         cta=cta,
         brand_color=brand_color,
         accent_color=accent_color,
+        panel_text=_text_on(brand_color),
         font_url=settings.default_font_url,
         display_font=settings.default_display_font,
         body_font=settings.default_body_font,

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+{% if font_url %}<link rel="stylesheet" href="{{ font_url }}">{% endif %}
+<style>
+  :root { --accent: {{ accent_color }}; --brand: {{ brand_color }}; --ink: {{ panel_text }}; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: {{ width }}px; height: {{ height }}px; overflow: hidden; }
+
+  .stage { width: 100%; height: 100%; display: flex; background: var(--brand);
+           font-family: {{ body_font }};
+           {% if orient == 'v' %}flex-direction: row;{% else %}flex-direction: column;{% endif %} }
+
+  /* Zona de imagen: la foto de producto llena su banda, sin scrim. */
+  .img { flex: none;
+         {% if orient == 'v' %}width: 58%; height: 100%;{% else %}width: 100%; height: 58%;{% endif %}
+         {% if background %}
+         background: url('{{ background }}') center / cover no-repeat;
+         {% else %}
+         background: linear-gradient(135deg, var(--brand), #000);
+         {% endif %} }
+
+  /* Panel de texto: color de marca sólido, el texto nunca pisa la imagen. */
+  .panel { flex: 1; min-width: 0; display: flex; flex-direction: column;
+           justify-content: center; gap: 2.2vmin; padding: 5%; color: var(--ink); }
+
+  .logo { height: clamp(18px, 6vmin, 56px); max-width: 60%;
+          object-fit: contain; object-position: left center; margin-bottom: 1vmin; }
+
+  .headline { font-family: {{ display_font }}; font-weight: 800; line-height: 1.05;
+              letter-spacing: -0.02em; text-wrap: balance;
+              font-size: clamp(15px, 5.2vmin, 60px); }
+  .body { font-size: clamp(11px, 2.6vmin, 26px); opacity: .9; line-height: 1.3; }
+  .cta { align-self: flex-start; margin-top: .6vmin; background: var(--accent); color: #fff;
+         font-family: {{ display_font }}; font-weight: 700;
+         font-size: clamp(11px, 2.4vmin, 22px);
+         padding: 1.8vmin 3.6vmin; border-radius: 999px; }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="img"></div>
+    <div class="panel">
+      {% if logo %}<img class="logo" src="{{ logo }}" alt="">{% endif %}
+      {% if headline %}<div class="headline">{{ headline }}</div>{% endif %}
+      {% if body %}<div class="body">{{ body }}</div>{% endif %}
+      {% if cta %}<div class="cta">{{ cta }}</div>{% endif %}
+    </div>
+  </div>
+</body>
+</html>

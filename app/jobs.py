@@ -91,6 +91,7 @@ async def run_pipeline(jid, req, logo_bytes, product_bytes) -> None:
                 p = products[i] if i < len(products) else None
                 if p and p.get("full"):
                     bg, product = p["full"], None          # imagen como fondo
+                    img_is_product = True
                 else:
                     if ratio_key not in cache[i]:          # fondo generado
                         gw, gh = _gen_dims(spec)
@@ -99,6 +100,7 @@ async def run_pipeline(jid, req, logo_bytes, product_bytes) -> None:
                         )
                     bg = cache[i][ratio_key]
                     product = p["cutout"] if p else None   # producto en primer plano
+                    img_is_product = False
 
                 png = await composer.compose(
                     runtime.browser, spec,
@@ -110,6 +112,7 @@ async def run_pipeline(jid, req, logo_bytes, product_bytes) -> None:
                     accent_color=req.accent_color,
                     logo=logo,
                     product=product,
+                    image_is_product=img_is_product,
                     template=req.template,
                 )
                 fname = f"{jid}_{plat}_{i + 1}.png"
