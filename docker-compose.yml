@@ -6,7 +6,7 @@ services:
     # image: adgen:latest        # alternativa si construyes la imagen aparte
     container_name: adgen
     ports:
-      - "8080:8080"
+      - "8080:8000"
     environment:
       # Imprescindible:
       ADGEN_MISTRAL_API_KEY: ${ADGEN_MISTRAL_API_KEY}
