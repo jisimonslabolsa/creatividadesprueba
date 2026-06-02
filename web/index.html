@@ -69,6 +69,21 @@
     text-align:center;color:var(--muted);font-size:14px;cursor:pointer;background:var(--panel)}
   .filedrop.has{color:var(--text);border-color:var(--accent)}
   .filedrop input{display:none}
+  .check{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:13.5px;
+    color:var(--muted);cursor:pointer}
+  .check input{accent-color:var(--accent);width:15px;height:15px}
+  .webbtn{width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);
+    border-radius:10px;padding:10px;font:inherit;font-size:14px;cursor:pointer}
+  .webbtn:hover{border-color:var(--accent)}
+  .webbtn:disabled{opacity:.6;cursor:default}
+  .webgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:10px}
+  .pick{position:relative;border:2px solid transparent;border-radius:8px;overflow:hidden;
+    cursor:pointer;background:#000;aspect-ratio:1}
+  .pick img{width:100%;height:100%;object-fit:contain;display:block}
+  .pick.sel{border-color:var(--accent)}
+  .pick .tick{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;
+    background:var(--accent);color:#fff;font-size:11px;display:none;align-items:center;justify-content:center}
+  .pick.sel .tick{display:flex}
 
   button.go{width:100%;margin-top:6px;background:var(--accent);color:#fff;border:0;
     font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:16px;
@@ -166,6 +181,23 @@
     </div>
 
     <div class="field">
+      <label class="section">Imagen de producto (opcional)</label>
+      <label class="filedrop" id="proddrop">
+        <span id="prodLabel">Subir imagen · si no, se toma de la web</span>
+        <input type="file" id="product" accept="image/*">
+      </label>
+      <label class="check"><input type="checkbox" id="useprod" checked>
+        Incluir imagen de producto en las creatividades</label>
+    </div>
+
+    <div class="field">
+      <label class="section">Elegir imágenes de la web</label>
+      <button type="button" class="webbtn" id="findimgs">Buscar imágenes de la URL</button>
+      <div class="webgrid" id="webimgs"></div>
+      <div class="hint" id="webhint" style="display:none"></div>
+    </div>
+
+    <div class="field">
       <label class="section">Tamaños a generar</label>
       <div id="groups"></div>
     </div>
@@ -252,6 +284,64 @@ $('#logo').addEventListener('change', e => {
   $('#fileLabel').textContent = f ? f.name : 'Subir logo · si no, se intenta tomar de la web';
   $('#filedrop').classList.toggle('has', !!f);
 });
+$('#product').addEventListener('change', e => {
+  const f = e.target.files[0];
+  $('#prodLabel').textContent = f ? f.name : 'Subir imagen · si no, se toma de la web';
+  $('#proddrop').classList.toggle('has', !!f);
+});
+
+// ---- selector de imágenes de la web ----
+let WEBSELECTED = [];
+
+$('#findimgs').addEventListener('click', async () => {
+  const url = $('#url').value.trim();
+  if(!url){ alert('Introduce primero la URL de la página.'); return; }
+  const btn = $('#findimgs'); const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Buscando…';
+  try{
+    const fd = new FormData(); fd.append('url', url);
+    const res = await fetch('/scrape-images', {method:'POST', body:fd});
+    if(!res.ok) throw new Error(res.statusText);
+    const {images} = await res.json();
+    renderWebImages(images || []);
+  }catch(e){ alert('No se pudieron obtener imágenes: ' + e.message); }
+  finally{ btn.disabled = false; btn.textContent = orig; }
+});
+
+function renderWebImages(images){
+  WEBSELECTED = [];
+  const grid = $('#webimgs');
+  if(!images.length){
+    grid.innerHTML = '';
+    $('#webhint').style.display = 'block';
+    $('#webhint').textContent = 'No se encontraron imágenes en esa URL.';
+    return;
+  }
+  grid.innerHTML = images.map(u => `
+    <div class="pick" data-u="${u.replace(/"/g,'&quot;')}">
+      <img src="${u}" loading="lazy" referrerpolicy="no-referrer">
+      <span class="tick">✓</span>
+    </div>`).join('');
+  grid.querySelectorAll('.pick').forEach(el => el.addEventListener('click', () => togglePick(el)));
+  updateWebHint();
+}
+
+function togglePick(el){
+  const u = el.dataset.u;
+  const i = WEBSELECTED.indexOf(u);
+  if(i >= 0){ WEBSELECTED.splice(i,1); el.classList.remove('sel'); }
+  else { WEBSELECTED.push(u); el.classList.add('sel'); }
+  updateWebHint();
+}
+
+function updateWebHint(){
+  const n = parseInt($('#nvar').value || '1', 10) || 1;
+  const h = $('#webhint'); h.style.display = 'block';
+  h.textContent = WEBSELECTED.length
+    ? `${WEBSELECTED.length} seleccionada(s) · se usa una por variante (${n} variantes; si eliges menos, se reutilizan en orden)`
+    : `Elige hasta ${n} (una por variante). Si no eliges ninguna, se toman automáticamente de la web.`;
+}
+$('#nvar').addEventListener('input', () => { if($('#webimgs').children.length) updateWebHint(); });
 
 // ---- submit ----
 $('#form').addEventListener('submit', async e => {
@@ -271,6 +361,10 @@ $('#form').addEventListener('submit', async e => {
   fd.append('accent_color', $('#accent').value);
   const logoFile = $('#logo').files[0];
   if(logoFile) fd.append('logo', logoFile);
+  const prodFile = $('#product').files[0];
+  if(prodFile) fd.append('product', prodFile);
+  fd.append('use_product', $('#useprod').checked ? 'true' : 'false');
+  WEBSELECTED.forEach(u => fd.append('product_images', u));
 
   $('#go').disabled = true;
   $('#output').innerHTML = '';

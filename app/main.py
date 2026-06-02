@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from playwright.async_api import async_playwright
 
-from . import jobs, models, runtime
+from . import jobs, models, runtime, scraper
 from .config import settings
 from .platforms import CATEGORY_ORDER, PLATFORMS
 
@@ -53,6 +53,19 @@ def list_platforms():
     return groups
 
 
+@app.post("/scrape-images")
+async def scrape_images(url: str = Form(...)):
+    """Devuelve las imágenes candidatas de una URL para que el usuario elija."""
+    info = await scraper.scrape(runtime.browser, url)
+    imgs = ([info["og_image"]] if info.get("og_image") else []) + info.get("images", [])
+    seen, out = set(), []
+    for u in imgs:
+        if u and u not in seen:
+            seen.add(u)
+            out.append(u)
+    return {"images": out[:24]}
+
+
 @app.post("/ads/generate")
 async def generate(
     bg: BackgroundTasks,
@@ -64,7 +77,10 @@ async def generate(
     brand_color: str = Form("#111114"),
     accent_color: str = Form("#ff4d2e"),
     template: str | None = Form(None),
+    use_product: bool = Form(True),
+    product_images: list[str] = Form([]),
     logo: UploadFile | None = File(None),
+    product: UploadFile | None = File(None),
 ):
     unknown = [p for p in platforms if p not in PLATFORMS]
     if unknown:
@@ -73,6 +89,7 @@ async def generate(
         raise HTTPException(400, "indica 'url' o 'brief' (o ambos)")
 
     logo_bytes = await logo.read() if logo is not None else None
+    product_bytes = await product.read() if product is not None else None
 
     req = models.GenerateRequest(
         url=url or None,
@@ -83,9 +100,11 @@ async def generate(
         brand_color=brand_color,
         accent_color=accent_color,
         template=template or None,
+        use_product=use_product,
+        product_images=[u for u in product_images if u],
     )
     jid = await models.create_job(platforms)
-    bg.add_task(jobs.run_pipeline, jid, req, logo_bytes)
+    bg.add_task(jobs.run_pipeline, jid, req, logo_bytes, product_bytes)
     return {"job_id": jid, "status": "queued",
             "expected": len(platforms) * req.n_variants}
 

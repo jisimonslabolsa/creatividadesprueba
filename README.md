@@ -39,6 +39,19 @@ pip install -r requirements.txt
 python -m playwright install chromium
 ```
 
+### Recorte de fondo del producto (opcional)
+
+Para que el producto aparezca recortado en primer plano (en vez de como fondo),
+instala `rembg`:
+
+```bash
+pip install rembg onnxruntime
+```
+
+La primera vez descarga un modelo (~170 MB). Para incluirlo en Docker, añade esa
+línea al `Dockerfile`. Si no lo instalas, todo sigue funcionando: la imagen del
+producto se usa como fondo a sangre.
+
 ## Arrancar (local)
 
 ```bash
@@ -82,6 +95,15 @@ En `http://localhost:8000`:
   se basa solo en el contenido de la URL.
 - **Logotipo** opcional. Si no se sube, se intenta extraer de la web
   (apple-touch-icon / favicon).
+- **Imagen de producto** opcional. Si no se sube, se toma de la web (`og:image`
+  o la imagen más grande). Si `rembg` está instalado y `ADGEN_REMOVE_PRODUCT_BG`
+  está activo, se recorta el fondo y se compone el producto en primer plano sobre
+  un fondo diseñado; si no, la imagen se usa como fondo a sangre. Desactívala con
+  el checkbox si prefieres creatividades sin producto.
+- **Elegir imágenes de la web**: el botón "Buscar imágenes de la URL" lista las
+  imágenes detectadas en la página. Selecciona hasta tantas como variantes vayas
+  a crear y se usará una distinta en cada variante (si eliges menos, se reutilizan
+  en orden; si no eliges ninguna, se toman automáticamente).
 - **Tamaños**: catálogo completo IAB + Facebook + Instagram + TikTok, con botón
   "Todos" por categoría.
 
@@ -119,6 +141,7 @@ Variables de entorno con prefijo `ADGEN_` (ver `app/config.py`):
 | `ADGEN_OLLAMA_MODEL`     | `qwen2.5:14b`            | Modelo si usas Ollama en local        |
 | `ADGEN_LLM_TEMPERATURE`  | `0.8`                    | Creatividad del copy (0–1)            |
 | `ADGEN_IMAGE_PROVIDER`   | `placeholder`            | `placeholder` o `comfyui`             |
+| `ADGEN_REMOVE_PRODUCT_BG`| `true`                   | Recortar fondo del producto (usa rembg)|
 | `ADGEN_COMFYUI_URL`      | `http://localhost:8188`  | Endpoint de ComfyUI                   |
 | `ADGEN_COMFYUI_WORKFLOW` | `composition/workflows/txt2img.json` | Workflow exportado        |
 

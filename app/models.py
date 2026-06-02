@@ -18,6 +18,8 @@ class GenerateRequest(BaseModel):
     language: str = "es"
     brand_color: str = "#111114"
     accent_color: str = "#ff4d2e"
+    use_product: bool = True           # incluir imagen de producto (subida o web)
+    product_images: list[str] = []     # URLs elegidas en la UI (una por variante)
 
 
 class Creative(BaseModel):

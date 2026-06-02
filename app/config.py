@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     comfyui_url: str = "http://localhost:8188"
     comfyui_workflow: str = "composition/workflows/txt2img.json"
 
+    # Recortar el fondo del producto (requiere 'rembg' instalado). Si no se
+    # puede recortar, la imagen del producto se usa como fondo a sangre.
+    remove_product_bg: bool = True
+
     # --- Tipografía por defecto de la capa de composición ---
     # Fuente con carácter (evita Inter/Roboto). Configurable por marca.
     default_font_url: str = (
