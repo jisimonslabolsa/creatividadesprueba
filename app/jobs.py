@@ -5,6 +5,11 @@ from .config import settings
 from .platforms import PLATFORMS
 
 
+WIDE_BANNERS = {"iab_leaderboard", "iab_large_leaderboard", "iab_mobile_leaderboard"}
+SMALL_PRODUCT = {"iab_skyscraper": 0.25, "iab_portrait": 0.25}   # -75%
+
+
+
 def _gen_dims(spec) -> tuple[int, int]:
     long = max(spec.width, spec.height)
     scale = min(1280 / long, 1.0)
@@ -89,17 +94,25 @@ async def run_pipeline(jid, req, logo_bytes, product_bytes) -> None:
             ratio_key = round(spec.width / spec.height, 2)
             for i, v in enumerate(variants):
                 p = products[i] if i < len(products) else None
-                if p and p.get("full"):
-                    bg, product = p["full"], None          # imagen como fondo
+                if plat in WIDE_BANNERS:
+                    # ancho: producto recortado al lado del logo (sin panel ni fondo)
+                    raw = p.get("cutout") or p.get("full") if p else None
+                    bg, product = None, assets.scale(raw, 0.6)   # -40%
+                    img_is_product = False
+                elif p and p.get("full"):
+                    raw = p["full"]
+                    if plat in SMALL_PRODUCT:
+                        raw = assets.scale(raw, SMALL_PRODUCT[plat])   # -75%
+                    bg, product = raw, None
                     img_is_product = True
                 else:
-                    if ratio_key not in cache[i]:          # fondo generado
+                    if ratio_key not in cache[i]:
                         gw, gh = _gen_dims(spec)
                         cache[i][ratio_key] = await imagegen.generate_image(
                             v.get("image_prompt") or context[:200], gw, gh
                         )
                     bg = cache[i][ratio_key]
-                    product = p["cutout"] if p else None   # producto en primer plano
+                    product = p["cutout"] if p else None
                     img_is_product = False
 
                 png = await composer.compose(

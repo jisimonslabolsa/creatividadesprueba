@@ -13,7 +13,7 @@
 
   .bg { position: absolute; inset: 0;
         {% if background %}
-        background: url('{{ background }}') center / cover no-repeat;
+        background: url('{{ background }}') center / {% if contain %}contain{% else %}cover{% endif %} no-repeat;
         {% else %}
         background: linear-gradient(135deg, var(--brand), #000);
         {% endif %} }
@@ -23,8 +23,13 @@
            background: linear-gradient(180deg,
              rgba(0,0,0,.18) 0%, rgba(0,0,0,0) 36%, rgba(0,0,0,.82) 100%); }
 
-  .logo { position: absolute; top: var(--pad); left: var(--pad);
-          height: 8vmin; max-width: 42%; object-fit: contain; }
+  .logo { position: absolute; top: var(--pad); left: var(--pad);object-fit: contain;filter: drop-shadow(0 2px 6px rgba(0,0,0,.5));
+          {% if narrow %}
+          width: calc(100% - 2 * var(--pad)); max-width: none; height: auto;
+          {% else %}
+          height: 16vmin; max-width: 42%;
+          {% endif %} }
+  }
 
   .content { position: absolute; inset: 0; padding: var(--pad);
              display: flex; flex-direction: column; justify-content: flex-end;

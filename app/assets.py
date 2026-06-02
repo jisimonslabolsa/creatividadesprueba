@@ -25,6 +25,20 @@ async def fetch_bytes(url: str) -> bytes | None:
         return None
 
 
+def scale(raw: bytes | None, factor: float) -> bytes | None:
+    """Reduce un PNG por un factor (0.6 = -40%) manteniendo transparencia."""
+    if not raw:
+        return None
+    try:
+        img = Image.open(io.BytesIO(raw)).convert("RGBA")
+        w, h = int(img.width * factor), int(img.height * factor)
+        img = img.resize((max(w, 1), max(h, 1)), Image.LANCZOS)
+        out = io.BytesIO()
+        img.save(out, "PNG")
+        return out.getvalue()
+    except Exception:
+        return raw
+
 def normalize_image(raw: bytes | None, max_side: int = 1600) -> bytes | None:
     """Convierte a PNG RGBA y acota el tamaño (logos, o imagen como fondo)."""
     if not raw:
