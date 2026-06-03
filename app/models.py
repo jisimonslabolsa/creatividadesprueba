@@ -20,6 +20,7 @@ class GenerateRequest(BaseModel):
     accent_color: str = "#ff4d2e"
     use_product: bool = True           # incluir imagen de producto (subida o web)
     product_images: list[str] = []     # URLs elegidas en la UI (una por variante)
+    output_format: str = "png"         # "png" | "jpg" | "gif" (rota imágenes)
 
 
 class Creative(BaseModel):
