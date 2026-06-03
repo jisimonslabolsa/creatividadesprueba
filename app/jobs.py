@@ -89,9 +89,14 @@ async def run_pipeline(jid, req, logo_bytes, product_bytes) -> None:
             ratio_key = round(spec.width / spec.height, 2)
             for i, v in enumerate(variants):
                 p = products[i] if i < len(products) else None
-                if p and p.get("full"):
-                    bg, product = p["full"], None          # imagen como fondo
-                    img_is_product = True
+                if spec.height <= 120:
+                    # tira ancha: producto recortado junto al logo (tamaño por CSS)
+                    prod_raw = (p.get("cutout") or p.get("full")) if p else None
+                    bg, product, img_is_product = None, prod_raw, False
+                elif p and p.get("full"):
+                    # foto como fondo; en 120x600/300x1050 la plantilla la muestra
+                    # con 'contain' y margen (reducida y sin recortar)
+                    bg, product, img_is_product = p["full"], None, True
                 else:
                     if ratio_key not in cache[i]:          # fondo generado
                         gw, gh = _gen_dims(spec)
