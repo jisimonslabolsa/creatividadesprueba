@@ -1,8 +1,11 @@
 from pathlib import Path
 
-from . import assets, composer, imagegen, llm, models, runtime, scraper
+from . import animate, assets, composer, imagegen, llm, models, runtime, scraper
 from .config import settings
 from .platforms import PLATFORMS
+
+GIF_SECONDS = 3      # segundos por imagen
+GIF_MAX_FRAMES = 5   # máximo de imágenes que rotan
 
 
 def _gen_dims(spec) -> tuple[int, int]:
@@ -25,35 +28,42 @@ def _process(raw: bytes | None) -> dict | None:
     return {"full": full, "cutout": None} if full else None
 
 
-async def _resolve_products(req, info, product_bytes, n) -> list:
-    """Devuelve una lista de longitud n (una entrada por variante). Cada entrada
-    es {cutout|full} o None.
-    Prioridad: imagen subida (misma para todas) > imágenes elegidas en la UI
-    (una por variante) > primeras imágenes de la web (una por variante)."""
+async def _processed_list(req, info, product_bytes) -> list:
+    """Lista de imágenes de producto procesadas.
+    Prioridad: imagen subida > imágenes elegidas en la UI > primeras de la web."""
     if not req.use_product:
-        return [None] * n
-
+        return []
     raws: list[bytes] = []
     if product_bytes:
-        raws = [product_bytes]                       # subida: una para todas
-    elif req.product_images:                         # selección manual (URLs)
+        raws = [product_bytes]
+    elif req.product_images:
         for u in req.product_images:
             b = await assets.fetch_bytes(u)
             if b:
                 raws.append(b)
-    else:                                            # auto: primeras de la web
+    else:
         candidates = ([info["og_image"]] if info.get("og_image") else []) + \
             info.get("images", [])
-        for u in candidates[:n]:
+        for u in candidates[:GIF_MAX_FRAMES]:
             b = await assets.fetch_bytes(u)
             if b:
                 raws.append(b)
+    return [p for p in (_process(r) for r in raws) if p]
 
-    processed = [p for p in (_process(r) for r in raws) if p]
-    if not processed:
-        return [None] * n
-    # alinea con variantes; si hay menos imágenes, se reutilizan en ciclo
-    return [processed[i % len(processed)] for i in range(n)]
+
+async def _layout(spec, p, i, ratio_key, cache, context, v):
+    """Decide (fondo, producto, es_foto_producto) para un tamaño e imagen."""
+    if spec.height <= 120:                          # tira ancha: producto junto al logo
+        prod_raw = (p.get("cutout") or p.get("full")) if p else None
+        return None, prod_raw, False
+    if p and p.get("full"):                         # foto como fondo
+        return p["full"], None, True
+    if ratio_key not in cache[i]:                   # fondo generado
+        gw, gh = _gen_dims(spec)
+        cache[i][ratio_key] = await imagegen.generate_image(
+            v.get("image_prompt") or context[:200], gw, gh
+        )
+    return cache[i][ratio_key], (p["cutout"] if p else None), False
 
 
 async def run_pipeline(jid, req, logo_bytes, product_bytes) -> None:
@@ -77,51 +87,52 @@ async def run_pipeline(jid, req, logo_bytes, product_bytes) -> None:
             context, n=req.n_variants, language=req.language
         )
         n = len(variants)
-        products = await _resolve_products(req, info, product_bytes, n)
+
+        processed = await _processed_list(req, info, product_bytes)
+        products = ([processed[i % len(processed)] for i in range(n)]
+                    if processed else [None] * n)
+        gif_srcs = processed[:GIF_MAX_FRAMES] or [None]   # imágenes que rotan
+
+        fmt = (req.output_format or "png").lower()
+        ext = {"gif": "gif", "jpg": "jpg"}.get(fmt, "png")
 
         out_dir = Path(settings.output_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
-        cache: list[dict] = [{} for _ in variants]   # fondos generados, por proporción
+        cache: list[dict] = [{} for _ in variants]
         creatives: list[dict] = []
 
         for plat in req.platforms:
             spec = PLATFORMS[plat]
             ratio_key = round(spec.width / spec.height, 2)
             for i, v in enumerate(variants):
-                p = products[i] if i < len(products) else None
-                if spec.height <= 120:
-                    # tira ancha: producto recortado junto al logo (tamaño por CSS)
-                    prod_raw = (p.get("cutout") or p.get("full")) if p else None
-                    bg, product, img_is_product = None, prod_raw, False
-                elif p and p.get("full"):
-                    # foto como fondo; en 120x600/300x1050 la plantilla la muestra
-                    # con 'contain' y margen (reducida y sin recortar)
-                    bg, product, img_is_product = p["full"], None, True
-                else:
-                    if ratio_key not in cache[i]:          # fondo generado
-                        gw, gh = _gen_dims(spec)
-                        cache[i][ratio_key] = await imagegen.generate_image(
-                            v.get("image_prompt") or context[:200], gw, gh
-                        )
-                    bg = cache[i][ratio_key]
-                    product = p["cutout"] if p else None   # producto en primer plano
-                    img_is_product = False
-
-                png = await composer.compose(
-                    runtime.browser, spec,
-                    background=bg,
-                    headline=v.get("headline", ""),
-                    body=v.get("body", ""),
-                    cta=v.get("cta", ""),
-                    brand_color=req.brand_color,
-                    accent_color=req.accent_color,
-                    logo=logo,
-                    product=product,
-                    image_is_product=img_is_product,
-                    template=req.template,
+                kw = dict(
+                    headline=v.get("headline", ""), body=v.get("body", ""),
+                    cta=v.get("cta", ""), brand_color=req.brand_color,
+                    accent_color=req.accent_color, logo=logo, template=req.template,
                 )
-                fname = f"{jid}_{plat}_{i + 1}.png"
-                (out_dir / fname).write_bytes(png)
+                if fmt == "gif":
+                    frames = []
+                    for p in gif_srcs:
+                        bg, product, isp = await _layout(
+                            spec, p, i, ratio_key, cache, context, v
+                        )
+                        frames.append(await composer.compose(
+                            runtime.browser, spec, background=bg,
+                            product=product, image_is_product=isp, **kw,
+                        ))
+                    data = animate.make_gif(frames, GIF_SECONDS)
+                else:
+                    bg, product, isp = await _layout(
+                        spec, products[i], i, ratio_key, cache, context, v
+                    )
+                    png = await composer.compose(
+                        runtime.browser, spec, background=bg,
+                        product=product, image_is_product=isp, **kw,
+                    )
+                    data = animate.to_jpg(png) if ext == "jpg" else png
+
+                fname = f"{jid}_{plat}_{i + 1}.{ext}"
+                (out_dir / fname).write_bytes(data)
                 creatives.append({
                     "platform": plat, "label": spec.label,
                     "width": spec.width, "height": spec.height,
