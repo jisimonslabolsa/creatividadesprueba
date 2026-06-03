@@ -94,6 +94,7 @@ async def generate(
     template: str | None = Form(None),
     use_product: bool = Form(True),
     product_images: list[str] = Form([]),
+    output_format: str = Form("png"),
     logo: UploadFile | None = File(None),
     product: UploadFile | None = File(None),
 ):
@@ -117,6 +118,7 @@ async def generate(
         template=template or None,
         use_product=use_product,
         product_images=[u for u in product_images if u],
+        output_format=(output_format or "png").lower(),
     )
     jid = await models.create_job(platforms)
     bg.add_task(jobs.run_pipeline, jid, req, logo_bytes, product_bytes)
@@ -161,7 +163,8 @@ async def download_job(jid: str, category: str | None = None):
             safe = re.sub(r"[^A-Za-z0-9]+", "-", c.label).strip("-")
             base = f"{c.platform}_{safe}_{c.width}x{c.height}"
             seen[base] = seen.get(base, 0) + 1
-            zf.write(fpath, f"{base}_v{seen[base]}.png")
+            ext = fpath.suffix or ".png"
+            zf.write(fpath, f"{base}_v{seen[base]}{ext}")
             added += 1
     if not added:
         raise HTTPException(404, "sin creatividades para esa categoría")
