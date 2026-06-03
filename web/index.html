@@ -202,6 +202,15 @@
       <div id="groups"></div>
     </div>
 
+    <div class="field">
+      <label class="section">Formato de salida</label>
+      <select id="format" style="width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px;font:inherit">
+        <option value="png">PNG (estático)</option>
+        <option value="jpg">JPG (estático)</option>
+        <option value="gif">GIF animado · rota hasta 5 imágenes (3 s c/u)</option>
+      </select>
+    </div>
+
     <div class="row" style="margin-bottom:20px">
       <div class="field">
         <label class="section">Variantes</label>
@@ -359,6 +368,7 @@ $('#form').addEventListener('submit', async e => {
   fd.append('n_variants', $('#nvar').value || '3');
   fd.append('brand_color', $('#brand').value);
   fd.append('accent_color', $('#accent').value);
+  fd.append('output_format', $('#format').value);
   const logoFile = $('#logo').files[0];
   if(logoFile) fd.append('logo', logoFile);
   const prodFile = $('#product').files[0];
