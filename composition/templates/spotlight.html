@@ -11,12 +11,21 @@
   .stage { position: relative; width: 100%; height: 100%;
            font-family: {{ body_font }}; background: #0c0c0e; color: #fff; }
 
+  {% if contain %}
+  .bg { position: absolute; inset: 14% 12% 24% 12%;
+        {% if background %}
+        background: url('{{ background }}') center / contain no-repeat;
+        {% else %}
+        background: linear-gradient(135deg, var(--brand), #000);
+        {% endif %} }
+  {% else %}
   .bg { position: absolute; inset: 0;
         {% if background %}
         background: url('{{ background }}') center / cover no-repeat;
         {% else %}
         background: linear-gradient(135deg, var(--brand), #000);
         {% endif %} }
+  {% endif %}
 
   /* Scrim para legibilidad del texto sobre cualquier foto */
   .scrim { position: absolute; inset: 0;
@@ -24,7 +33,13 @@
              rgba(0,0,0,.18) 0%, rgba(0,0,0,0) 36%, rgba(0,0,0,.82) 100%); }
 
   .logo { position: absolute; top: var(--pad); left: var(--pad);
-          height: 8vmin; max-width: 42%; object-fit: contain; }
+          object-fit: contain; object-position: left center;
+          filter: drop-shadow(0 2px 8px rgba(0,0,0,.55));
+          {% if narrow %}
+          width: calc(100% - 2 * var(--pad)); max-width: none; height: auto;
+          {% else %}
+          height: 16vmin; max-width: 42%;
+          {% endif %} }
 
   .content { position: absolute; inset: 0; padding: var(--pad);
              display: flex; flex-direction: column; justify-content: flex-end;
