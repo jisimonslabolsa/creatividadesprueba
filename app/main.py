@@ -55,15 +55,30 @@ def list_platforms():
 
 @app.post("/scrape-images")
 async def scrape_images(url: str = Form(...)):
-    """Devuelve las imágenes candidatas de una URL para que el usuario elija."""
+    """Devuelve las imágenes candidatas (>=300x300) de una URL para elegir."""
+    import io
+    from PIL import Image
+    from . import assets
+
     info = await scraper.scrape(runtime.browser, url)
     imgs = ([info["og_image"]] if info.get("og_image") else []) + info.get("images", [])
     seen, out = set(), []
     for u in imgs:
-        if u and u not in seen:
-            seen.add(u)
+        if not u or u in seen:
+            continue
+        seen.add(u)
+        raw = await assets.fetch_bytes(u)
+        if not raw:
+            continue
+        try:
+            w, h = Image.open(io.BytesIO(raw)).size
+        except Exception:
+            continue
+        if w >= 300 and h >= 300:
             out.append(u)
-    return {"images": out[:24]}
+        if len(out) >= 24:
+            break
+    return {"images": out}
 
 
 @app.post("/ads/generate")
