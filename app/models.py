@@ -37,6 +37,8 @@ class Creative(BaseModel):
     body: str
     cta: str
     image_path: str
+    image_path: str
+    html_path: str | None = None   # ← añadir
 
 
 class Job(BaseModel):
