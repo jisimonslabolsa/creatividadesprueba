@@ -68,6 +68,17 @@ async def scrape(browser, url: str) -> dict:
         )
         text = re.sub(r"\n{2,}", "\n", text or "").strip()[:4000]
 
+
+        # Añadir en el scraping con Playwright:
+        fonts = await page.evaluate("""() => {
+            const styles = [...document.querySelectorAll('link[rel="stylesheet"]')]
+                .map(l => l.href).filter(h => h.includes('fonts.googleapis.com'));
+            const inline = getComputedStyle(document.body).fontFamily;
+            return { google_fonts: styles, body_font: inline };
+        }""")
+        # Retornar en el dict de resultado como `typography`
+        
+
         return {
             "url": url,
             "title": title,
