@@ -142,7 +142,7 @@ async def run_pipeline(jid, req, logo_bytes, product_bytes) -> None:
                     bg, product, isp = await _layout(
                         spec, products[i], i, ratio_key, cache, context, v
                     )
-                    png = await composer.compose(
+                    png, last_html = await composer.compose(
                         runtime.browser, spec, background=bg,
                         product=product, image_is_product=isp, **kw,
                     )
