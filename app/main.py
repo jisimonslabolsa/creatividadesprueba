@@ -78,7 +78,7 @@ async def scrape_images(url: str = Form(...)):
             out.append(u)
         if len(out) >= 24:
             break
-    return {"images": out}
+    return {"images": out, "typography": info.get("typography", {})}
 
 
 @app.post("/ads/generate")
