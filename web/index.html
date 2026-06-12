@@ -196,7 +196,14 @@
       <div class="webgrid" id="webimgs"></div>
       <div class="hint" id="webhint" style="display:none"></div>
     </div>
-
+<div class="field" id="fontSection" style="display:none">
+  <label class="section">Tipografía detectada</label>
+  <select id="fontSelect" style="width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px;font:inherit">
+    <option value="">— usar fuente por defecto —</option>
+  </select>
+  <div class="hint">Fuentes Google detectadas en la web del anunciante.</div>
+</div>
+    
     <div class="field">
       <label class="section">Tamaños a generar</label>
       <div id="groups"></div>
@@ -313,6 +320,13 @@ $('#findimgs').addEventListener('click', async () => {
     if(!res.ok) throw new Error(res.statusText);
     const {images} = await res.json();
     renderWebImages(images || []);
+    // también pedir tipografía
+if(data.typography?.google_fonts?.length){
+  const sel = $('#fontSelect');
+  sel.innerHTML = '<option value="">— usar fuente por defecto —</option>' +
+    data.typography.google_fonts.map(u => `<option value="${u}">${u.match(/family=([^&:]+)/)?.[1]?.replace(/\+/g,' ') || u}</option>`).join('');
+  $('#fontSection').style.display = 'block';
+}
   }catch(e){ alert('No se pudieron obtener imágenes: ' + e.message); }
   finally{ btn.disabled = false; btn.textContent = orig; }
 });
@@ -326,6 +340,7 @@ function renderWebImages(images){
     $('#webhint').textContent = 'No se encontraron imágenes en esa URL.';
     return;
   }
+  
   grid.innerHTML = images.map(u => `
     <div class="pick" data-u="${u.replace(/"/g,'&quot;')}">
       <img src="${u}" loading="lazy" referrerpolicy="no-referrer">
@@ -334,6 +349,7 @@ function renderWebImages(images){
   grid.querySelectorAll('.pick').forEach(el => el.addEventListener('click', () => togglePick(el)));
   updateWebHint();
 }
+  
 
 function togglePick(el){
   const u = el.dataset.u;
