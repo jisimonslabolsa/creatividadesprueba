@@ -171,6 +171,13 @@
       <label class="section">Briefing (opcional)</label>
       <textarea id="brief" placeholder="Tono, ofertas, público, ideas de imagen… Si lo dejas vacío, la IA se basa solo en la web."></textarea>
     </div>
+    <div class="field">
+  <label class="section">Textos manuales (opcional)</label>
+  <input type="text" id="manualHeadline" placeholder="Titular (si lo dejas vacío, lo genera la IA)">
+  <input type="text" id="manualBody" placeholder="Subtítulo / cuerpo" style="margin-top:8px">
+  <input type="text" id="manualCta" placeholder="CTA (ej: Comprar ahora)" style="margin-top:8px">
+  <div class="hint">Si rellenas alguno, se usa en todas las variantes y se omite la generación de copy por IA.</div>
+</div>
 
     <div class="field">
       <label class="section">Logotipo (opcional)</label>
@@ -218,6 +225,13 @@
       </select>
     </div>
 
+    <div class="field">
+  <label class="section">Plantilla de composición</label>
+  <select id="tmpl" style="width:100%;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px;font:inherit">
+    <option value="">— automática según formato —</option>
+  </select>
+</div>
+
     <div class="row" style="margin-bottom:20px">
       <div class="field">
         <label class="section">Variantes</label>
@@ -256,6 +270,17 @@ const $ = s => document.querySelector(s);
 let SIZES = {};   // key -> {label,width,height}
 let JOBID = null; // job activo, para la descarga ZIP
 
+async function loadTemplates(){
+  const {templates} = await (await fetch('/templates')).json();
+  const sel = $('#tmpl');
+  templates.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t; opt.textContent = t.replace('.html','');
+    sel.appendChild(opt);
+  });
+}
+
+  
 // ---- cargar catálogo de tamaños ----
 async function loadPlatforms(){
   const groups = await (await fetch('/platforms')).json();
@@ -392,6 +417,22 @@ $('#form').addEventListener('submit', async e => {
   fd.append('use_product', $('#useprod').checked ? 'true' : 'false');
   WEBSELECTED.forEach(u => fd.append('product_images', u));
 
+
+   // textos manuales
+  const mh = $('#manualHeadline').value.trim();
+  const mb = $('#manualBody').value.trim();
+  const mc = $('#manualCta').value.trim();
+  if(mh) fd.append('manual_headline', mh);
+  if(mb) fd.append('manual_body', mb);
+  if(mc) fd.append('manual_cta', mc);
+  const mf = $('#fontSelect')?.value;
+  if(mf) fd.append('manual_font_url', mf);
+
+  // plantilla
+  const tmpl = $('#tmpl').value;
+  if(tmpl) fd.append('template', tmpl);
+
+
   $('#go').disabled = true;
   $('#output').innerHTML = '';
   showStatus('En cola…', 0, 1);
@@ -452,7 +493,10 @@ function cardHtml(c){
         <div class="hl">${c.headline || ''}</div>
         <div class="lbl">${c.cta || ''}</div>
       </div>
-      <a class="dl" href="${c.image_path}" download>Descargar PNG</a>
+      <div style="display:flex;border-top:1px solid var(--line)">
+  <a class="dl" href="${c.image_path}" download style="flex:1;border-top:0">⬇ PNG</a>
+  ${c.html_path ? `<a class="dl" href="${c.html_path}" download style="flex:1;border-top:0;border-left:1px solid var(--line)">⬇ HTML</a>` : ''}
+</div>
     </div>`;
 }
 
@@ -530,6 +574,7 @@ async function openJob(id){
 
 loadPlatforms();
 loadHistory();
+  loadTemplates();
 </script>
 </body>
 </html>
