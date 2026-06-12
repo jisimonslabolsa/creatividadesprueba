@@ -97,14 +97,10 @@ async def generate(
     output_format: str = Form("png"),
     logo: UploadFile | None = File(None),
     product: UploadFile | None = File(None),
-    # ↓ AÑADIR:
     manual_headline: str | None = Form(None),
     manual_body: str | None = Form(None),
     manual_cta: str | None = Form(None),
     manual_font_url: str | None = Form(None),
-):
-
-    
 ):
     unknown = [p for p in platforms if p not in PLATFORMS]
     if unknown:
