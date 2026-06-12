@@ -21,7 +21,11 @@ class GenerateRequest(BaseModel):
     use_product: bool = True           # incluir imagen de producto (subida o web)
     product_images: list[str] = []     # URLs elegidas en la UI (una por variante)
     output_format: str = "png"         # "png" | "jpg" | "gif" (rota imágenes)
-
+    manual_headline: str | None = None
+    manual_body: str | None = None
+    manual_cta: str | None = None
+    manual_font_url: str | None = None   # Google Fonts URL detectada o escrita
+    template: str | None = None           # ya existe, confirmar que está
 
 class Creative(BaseModel):
     platform: str                      # clave del tamaño
