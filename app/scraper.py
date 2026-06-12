@@ -79,6 +79,7 @@ async def scrape(browser, url: str) -> dict:
         # Retornar en el dict de resultado como `typography`
         
 
+        # Sustituir el return actual:
         return {
             "url": url,
             "title": title,
@@ -87,6 +88,7 @@ async def scrape(browser, url: str) -> dict:
             "logo_url": meta["logo"],
             "images": images,
             "text": text,
+            "typography": fonts,   # ← añadir esta línea
         }
     finally:
         await page.close()
