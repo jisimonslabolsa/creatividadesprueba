@@ -97,6 +97,14 @@ async def generate(
     output_format: str = Form("png"),
     logo: UploadFile | None = File(None),
     product: UploadFile | None = File(None),
+    # ↓ AÑADIR:
+    manual_headline: str | None = Form(None),
+    manual_body: str | None = Form(None),
+    manual_cta: str | None = Form(None),
+    manual_font_url: str | None = Form(None),
+):
+
+    
 ):
     unknown = [p for p in platforms if p not in PLATFORMS]
     if unknown:
@@ -119,6 +127,11 @@ async def generate(
         use_product=use_product,
         product_images=[u for u in product_images if u],
         output_format=(output_format or "png").lower(),
+        manual_headline=manual_headline or None,
+        manual_body=manual_body or None,
+        manual_cta=manual_cta or None,
+        manual_font_url=manual_font_url or None,
+)
     )
     jid = await models.create_job(platforms)
     bg.add_task(jobs.run_pipeline, jid, req, logo_bytes, product_bytes)
@@ -176,5 +189,8 @@ async def download_job(jid: str, category: str | None = None):
         headers={"Content-Disposition": f'attachment; filename="adgen_{jid}{suffix}.zip"'},
     )
 @app.get("/templates")
-async def list_templates():
-    # lista los .html de composition/templates/
+def list_templates():
+    """Lista las plantillas disponibles en composition/templates/."""
+    tmpl_dir = Path(__file__).parent.parent / "composition" / "templates"
+    templates = [f.name for f in tmpl_dir.glob("*.html")]
+    return {"templates": templates}
