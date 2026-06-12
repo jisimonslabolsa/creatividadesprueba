@@ -83,9 +83,24 @@ async def run_pipeline(jid, req, logo_bytes, product_bytes) -> None:
         if logo is None and info.get("logo_url"):
             logo = assets.normalize_image(await assets.fetch_bytes(info["logo_url"]))
 
-        variants = await llm.generate_copy(
-            context, n=req.n_variants, language=req.language
-        )
+        if req.manual_headline or req.manual_body or req.manual_cta:
+            # Usar textos manuales: crear n_variants copias del mismo copy
+            v = {
+                "angle": "manual",
+                "headline": req.manual_headline or "",
+                "body": req.manual_body or "",
+                "cta": req.manual_cta or "",
+                "image_prompt": context[:200],
+            }
+            variants = [v] * req.n_variants
+        else:
+            variants = await llm.generate_copy(
+                context, n=req.n_variants, language=req.language
+            )
+
+
+
+        
         n = len(variants)
 
         processed = await _processed_list(req, info, product_bytes)
@@ -105,11 +120,13 @@ async def run_pipeline(jid, req, logo_bytes, product_bytes) -> None:
             spec = PLATFORMS[plat]
             ratio_key = round(spec.width / spec.height, 2)
             for i, v in enumerate(variants):
-                kw = dict(
-                    headline=v.get("headline", ""), body=v.get("body", ""),
-                    cta=v.get("cta", ""), brand_color=req.brand_color,
-                    accent_color=req.accent_color, logo=logo, template=req.template,
-                )
+               kw = dict(
+                   headline=v.get("headline", ""), body=v.get("body", ""),
+                   cta=v.get("cta", ""), brand_color=req.brand_color,
+                   accent_color=req.accent_color, logo=logo, template=req.template,
+                   font_url=req.manual_font_url or info.get("typography", {}).get("google_fonts", [None])[0],
+                   # ↑ usa la fuente manual si existe, sino la primera detectada en la web
+               )
                 if fmt == "gif":
                     frames = []
                     for p in gif_srcs:
@@ -139,6 +156,7 @@ async def run_pipeline(jid, req, logo_bytes, product_bytes) -> None:
                     "angle": v.get("angle", ""), "headline": v.get("headline", ""),
                     "body": v.get("body", ""), "cta": v.get("cta", ""),
                     "image_path": f"/outputs/{fname}",
+                    "html_path": f"/outputs/{html_fname}",   # ← añadir
                 })
                 await models.update_job(jid, creatives=creatives)
 
