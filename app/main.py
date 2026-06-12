@@ -175,3 +175,6 @@ async def download_job(jid: str, category: str | None = None):
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="adgen_{jid}{suffix}.zip"'},
     )
+@app.get("/templates")
+async def list_templates():
+    # lista los .html de composition/templates/
