@@ -63,7 +63,8 @@ async def compose(
     product: bytes | None = None,        # recorte del producto (primer plano)
     image_is_product: bool = False,      # el fondo es una foto de producto
     template: str | None = None,
-) -> bytes:
+    font_url: str | None = None,   # ← añadir
+) -> tuple[bytes, str]:            # ← cambiar tipo de retorno
     template_name = _pick_template(
         spec, template, product is not None, image_is_product
     )
@@ -89,6 +90,9 @@ async def compose(
         font_url=settings.default_font_url,
         display_font=settings.default_display_font,
         body_font=settings.default_body_font,
+        font_url=font_url or settings.default_font_url,  # ← sustituir settings.default_font_url
+        display_font=settings.default_display_font,
+        body_font=settings.default_body_font,
     )
 
     page = await browser.new_page(
@@ -98,6 +102,6 @@ async def compose(
     try:
         await page.set_content(html, wait_until="networkidle")
         await page.evaluate("() => document.fonts.ready")
-        return await page.screenshot(type="png")
-    finally:
+        png = await page.screenshot(type="png")
+        return png, html    finally:
         await page.close()
